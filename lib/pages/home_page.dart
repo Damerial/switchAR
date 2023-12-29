@@ -16,16 +16,14 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  // padding constants
   final double horizontalPadding = 40;
   final double verticalPadding = 25;
-
-  //polling timer
+  String weatherData = "Loading...";
   Timer? _pollingTimer;
+  final String token = "3dZX49-NzPVihXqUUIMvYRPCQD-4jVK5";
+  final List<String> virtualPins = ['V1', 'V2', 'V3', 'V4', 'V6'];
   WebSocketChannel? channel;
 
-  //weather
-  String weatherData = "Loading...";
 
   // list of smart devices
   List mySmartDevices = [
@@ -45,9 +43,32 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-    initializeDeviceStates();
-    _startPolling();
     fetchWeatherData();
+    startPolling();
+  }
+
+  void startPolling() {
+    _pollingTimer = Timer.periodic(Duration(seconds: 5), (_) => syncDeviceStates());
+  }
+
+  Future<void> syncDeviceStates() async {
+    for (String pin in virtualPins) {
+      String url = 'https://blynk.cloud/external/api/get?token=$token&$pin';
+      try {
+        var response = await http.get(Uri.parse(url));
+        if (response.statusCode == 200) {
+          bool isOn = response.body.trim() == '1';
+          int deviceIndex = mySmartDevices.indexWhere((device) => device[3] == pin);
+          if (deviceIndex != -1) {
+            setState(() {
+              mySmartDevices[deviceIndex][2] = isOn;
+            });
+          }
+        }
+      } catch (e) {
+        print("Error fetching state for pin $pin: $e");
+      }
+    }
   }
 
   // power button switched
@@ -65,7 +86,7 @@ class _HomePageState extends State<HomePage> {
       mySmartDevices[index][2] = newState;
     });
 
-    String token = "NBFTcjxflna3kYS55nd5KLRAmcfDMUfi";
+    String token = "3dZX49-NzPVihXqUUIMvYRPCQD-4jVK5";
     String devicePin = mySmartDevices[index][3];
     int value = mySmartDevices[index][2] ? 1 : 0;
 
@@ -91,7 +112,7 @@ class _HomePageState extends State<HomePage> {
       mySliderDevices[index][2] = newState;
     });
 
-    String token = "NBFTcjxflna3kYS55nd5KLRAmcfDMUfi";
+    String token = "3dZX49-NzPVihXqUUIMvYRPCQD-4jVK5";
     String devicePin = mySliderDevices[index][3];
 
     // Ensure the value is within 0 to 225 range
@@ -115,7 +136,7 @@ class _HomePageState extends State<HomePage> {
   Future<void> fetchWeatherData() async {
     try {
       final response = await http.get(Uri.parse(
-          'https://blynk.cloud/external/api/get?token=NBFTcjxflna3kYS55nd5KLRAmcfDMUfi&V7'));
+          'https://blynk.cloud/external/api/get?token=3dZX49-NzPVihXqUUIMvYRPCQD-4jVK5&V7'));
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         setState(() {
@@ -132,84 +153,6 @@ class _HomePageState extends State<HomePage> {
         weatherData = "Error: $e";
       });
     }
-  }
-
-  // Function to get the current state of a Blynk virtual pin
-  Future<String> getBlynkPinValue(String token, String devicePin) async {
-    final url = Uri.parse('http://blynk-cloud.com/$token/get/$devicePin');
-    final response = await http.get(url);
-
-    if (response.statusCode == 200) {
-      return json.decode(response.body)[0];
-    } else {
-      throw Exception('Failed to load pin value');
-    }
-  }
-
-  // Function to initialize the states of devices
-  void initializeDeviceStates() async {
-    String token = "NBFTcjxflna3kYS55nd5KLRAmcfDMUfi";
-    for (int i = 0; i < mySmartDevices.length; i++) {
-      try {
-        String pinValue = await getBlynkPinValue(token, mySmartDevices[i][3]);
-        bool isOn = pinValue == "1";
-        if (mySmartDevices[i][2] != isOn) {
-          setState(() {
-            mySmartDevices[i][2] = isOn;
-          });
-        }
-      } catch (e) {
-        print('Error fetching pin value: $e'); // Log the error
-      }
-    }
-  }
-
-  void _startPolling() {
-    _pollingTimer = Timer.periodic(
-        Duration(seconds: 10), (Timer t) => initializeDeviceStates());
-  }
-
-  Future<void> pollBlynkAPI() async {
-    String token = "NBFTcjxflna3kYS55nd5KLRAmcfDMUfi";
-    for (int i = 0; i < mySmartDevices.length; i++) {
-      try {
-        String pinValue = await getBlynkPinValue(token, mySmartDevices[i][3]);
-        print(
-            "Device: ${mySmartDevices[i][0]}, Blynk API Value: $pinValue"); // Log API value
-        bool isOn = pinValue == "1";
-        if (mySmartDevices[i][2] != isOn) {
-          print(
-              "Updating state for ${mySmartDevices[i][0]}"); // Log state update
-          setState(() {
-            mySmartDevices[i][2] = isOn;
-          });
-        }
-      } catch (e) {
-        print("Error polling Blynk API: $e"); // Log errors
-      }
-    }
-  }
-
-  //websocket function
-  void connectToWebSocket() {
-    channel = WebSocketChannel.connect(
-      Uri.parse(
-          ' ws://blynk-cloud.com:8082/websockets'), // Replace with your WebSocket URL
-    );
-
-    channel!.stream.listen(
-      (message) {
-        // Handle incoming messages
-        processMessage(message);
-      },
-      onDone: () {
-        // Handle WebSocket closing
-      },
-      onError: (error) {
-        // Handle errors
-        print(error);
-      },
-    );
   }
 
   void processMessage(dynamic message) {
@@ -286,11 +229,11 @@ class _HomePageState extends State<HomePage> {
                     ),
 
                     // account icon
-                    Icon(
-                      Icons.person,
-                      size: 45,
-                      color: Colors.grey[800],
-                    )
+                    Text(
+                      "$weatherData °C",
+                      style: TextStyle(
+                      fontSize: 25, color: Colors.grey.shade800),
+                    ),
                   ],
                 ),
               ),
@@ -313,14 +256,6 @@ class _HomePageState extends State<HomePage> {
                         Text(
                           'Haikal Wijdan',
                           style: GoogleFonts.bebasNeue(fontSize: 50),
-                        ),
-                        SizedBox(
-                            width:
-                                20), // Space between the name and weather data
-                        Text(
-                          "$weatherData",
-                          style: TextStyle(
-                              fontSize: 25, color: Colors.grey.shade800),
                         ),
                       ],
                     ),
