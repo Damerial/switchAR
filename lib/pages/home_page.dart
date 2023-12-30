@@ -23,6 +23,7 @@ class _HomePageState extends State<HomePage> {
   final String token = "3dZX49-NzPVihXqUUIMvYRPCQD-4jVK5";
   final List<String> virtualPins = ['V1', 'V2', 'V3', 'V4', 'V6'];
   WebSocketChannel? channel;
+  Timer? _timer;
 
 
   // list of smart devices
@@ -44,6 +45,7 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     fetchWeatherData();
+    _startRepeatedFetching();
     startPolling();
   }
 
@@ -133,6 +135,11 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  void _startRepeatedFetching() {
+  // Set up a timer that calls fetchWeatherData every 2 seconds
+  _timer = Timer.periodic(Duration(seconds: 2), (Timer t) => fetchWeatherData());
+  }
+
   Future<void> fetchWeatherData() async {
     try {
       final response = await http.get(Uri.parse(
@@ -201,6 +208,7 @@ class _HomePageState extends State<HomePage> {
   @override
   void dispose() {
     _pollingTimer?.cancel();
+    _timer?.cancel();
     super.dispose();
   }
 
@@ -352,38 +360,38 @@ class _HomePageState extends State<HomePage> {
           ),
         ),
       ),
-      // floatingActionButton: Padding(
-      //   padding:
-      //       const EdgeInsets.all(40.0), // Adjust this padding value as needed
-      //   child: Container(
-      //     width: 80,
-      //     height: 80,
-      //     decoration: const BoxDecoration(
-      //       shape: BoxShape.circle,
-      //       color: Color.fromARGB(255, 27, 28, 30),
-      //       boxShadow: [
-      //         BoxShadow(
-      //           color: Color.fromARGB(
-      //               130, 237, 125, 58), // Customize the glow color
-      //           spreadRadius: 15, // Spread radius
-      //           blurRadius: 15, // Blur radius
-      //           offset: Offset(0, 0), // changes position of shadow
-      //         ),
-      //       ],
-      //     ),
-      //     child: FloatingActionButton(
-      //       onPressed: () async {
-      //         await LaunchApp.openApp(
-      //           androidPackageName: 'com.DefaultCompany.switchAR',
-      //           //if it installed, it will open, unless it will open playstore
-      //           openStore: true,
-      //         );
-      //       },
-      //       child: const Icon(Icons.add),
-      //     ),
-      //   ),
-      // ),
-      // floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      floatingActionButton: Padding(
+        padding:
+            const EdgeInsets.all(40.0), // Adjust this padding value as needed
+        child: Container(
+          width: 80,
+          height: 80,
+          decoration: const BoxDecoration(
+            shape: BoxShape.circle,
+            color: Color.fromARGB(255, 27, 28, 30),
+            boxShadow: [
+              BoxShadow(
+                color: Color.fromARGB(
+                    130, 237, 125, 58), // Customize the glow color
+                spreadRadius: 15, // Spread radius
+                blurRadius: 15, // Blur radius
+                offset: Offset(0, 0), // changes position of shadow
+              ),
+            ],
+          ),
+          child: FloatingActionButton(
+            onPressed: () async {
+              await LaunchApp.openApp(
+                androidPackageName: 'com.DefaultCompany.switchAR',
+                //if it installed, it will open, unless it will open playstore
+                openStore: true,
+              );
+            },
+            child: const Icon(Icons.add),
+          ),
+        ),
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
     );
   }
 }
