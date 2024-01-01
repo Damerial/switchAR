@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../util/smart_device_box.dart';
 import '../util/sliderDevices.dart';
+import '../util/temperature_control.dart';
 import 'package:external_app_launcher/external_app_launcher.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert'; // Import for json decoding
@@ -54,11 +55,20 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> syncDeviceStates() async {
-    for (String pin in virtualPins) {
-      String url = 'https://blynk.cloud/external/api/get?token=$token&$pin';
-      try {
-        var response = await http.get(Uri.parse(url));
-        if (response.statusCode == 200) {
+  for (String pin in virtualPins) {
+    String url = 'https://blynk.cloud/external/api/get?token=$token&$pin';
+    try {
+      var response = await http.get(Uri.parse(url));
+      if (response.statusCode == 200) {
+        if (pin == 'V6') { // Check if the pin is for the slider device
+          double sliderValue = double.parse(response.body.trim());
+          int sliderIndex = mySliderDevices.indexWhere((device) => device[3] == pin);
+          if (sliderIndex != -1) {
+            setState(() {
+              mySliderDevices[sliderIndex][2] = sliderValue;
+            });
+          }
+        } else { // For other devices (assumed boolean)
           bool isOn = response.body.trim() == '1';
           int deviceIndex = mySmartDevices.indexWhere((device) => device[3] == pin);
           if (deviceIndex != -1) {
@@ -67,11 +77,13 @@ class _HomePageState extends State<HomePage> {
             });
           }
         }
-      } catch (e) {
-        print("Error fetching state for pin $pin: $e");
       }
+    } catch (e) {
+      print("Error fetching state for pin $pin: $e");
     }
   }
+}
+
 
   // power button switched
   void powerSwitchChanged(bool value, int index) {
@@ -230,17 +242,26 @@ class _HomePageState extends State<HomePage> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     // menu icon
-                    Image.asset(
-                      'lib/icons/menu.png',
-                      height: 45,
-                      color: Colors.grey[800],
-                    ),
-
-                    // account icon
                     Text(
                       "$weatherData °C",
                       style: TextStyle(
                       fontSize: 25, color: Colors.grey.shade800),
+                    ),
+
+                    // account icon
+                    IconButton(
+                      color: Colors.grey[800],
+                      onPressed: () async {
+                        await LaunchApp.openApp(
+                        androidPackageName: 'com.DefaultCompany.switchAR',
+                        //if it installed, it will open, unless it will open playstore
+                        openStore: true,
+                        );
+                      },
+                      icon: const Icon(
+                        Icons.camera_alt_rounded,
+                        size: 45.0, // Increase the size as per your requirement
+                      ),
                     ),
                   ],
                 ),
@@ -319,21 +340,15 @@ class _HomePageState extends State<HomePage> {
                 },
               ),
 
-              // Add spacing between grids
-              // const SizedBox(height: 20),
-
-              // Second grid (Repeat the structure for the second grid)
-              // Padding(
-              //   padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
-              //   child: Text(
-              //     "Other Devices", // Change the title as needed
-              //     style: TextStyle(
-              //       fontWeight: FontWeight.bold,
-              //       fontSize: 24,
-              //       color: Colors.grey.shade800,
-              //     ),
-              //   ),
-              // ),
+              // Temperature Control
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+              child: TemperatureControl(
+                token: "3dZX49-NzPVihXqUUIMvYRPCQD-4jVK5",
+                pin: "V8",
+              ),
+            ),
+            
               const SizedBox(height: 0),
               GridView.builder(
                 shrinkWrap: true,
@@ -360,38 +375,6 @@ class _HomePageState extends State<HomePage> {
           ),
         ),
       ),
-      floatingActionButton: Padding(
-        padding:
-            const EdgeInsets.all(40.0), // Adjust this padding value as needed
-        child: Container(
-          width: 80,
-          height: 80,
-          decoration: const BoxDecoration(
-            shape: BoxShape.circle,
-            color: Color.fromARGB(255, 27, 28, 30),
-            boxShadow: [
-              BoxShadow(
-                color: Color.fromARGB(
-                    130, 237, 125, 58), // Customize the glow color
-                spreadRadius: 15, // Spread radius
-                blurRadius: 15, // Blur radius
-                offset: Offset(0, 0), // changes position of shadow
-              ),
-            ],
-          ),
-          child: FloatingActionButton(
-            onPressed: () async {
-              await LaunchApp.openApp(
-                androidPackageName: 'com.DefaultCompany.switchAR',
-                //if it installed, it will open, unless it will open playstore
-                openStore: true,
-              );
-            },
-            child: const Icon(Icons.add),
-          ),
-        ),
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
     );
   }
 }
