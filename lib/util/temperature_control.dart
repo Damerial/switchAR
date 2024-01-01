@@ -80,16 +80,17 @@ class _TemperatureControlState extends State<TemperatureControl> {
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 25.0),
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
-                'Temperature: ${currentTemperature.toStringAsFixed(1)}°C',
+                'Set Temperature',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 20,
                   color: Colors.white,
                 ),
               ),
+              SizedBox(height: 10), // Spacing
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -101,6 +102,17 @@ class _TemperatureControlState extends State<TemperatureControl> {
                       });
                       updateTemperature(currentTemperature);
                     },
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    child: Text(
+                      '${currentTemperature.toStringAsFixed(1)}°C',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 24,
+                        color: Colors.white,
+                      ),
+                    ),
                   ),
                   IconButton(
                     icon: Icon(Icons.add, color: Colors.white),
